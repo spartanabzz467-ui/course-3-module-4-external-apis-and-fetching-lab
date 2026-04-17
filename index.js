@@ -1,61 +1,57 @@
-function runApp() {
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.querySelector("#state-input");
+  const button = document.querySelector("#get-alerts-btn");
 
-  const input = document.getElementById("stateInput");
-  const button = document.getElementById("getAlerts");
-  const results = document.getElementById("results");
-  const errorDiv = document.getElementById("error");
+  const alertsDisplay = document.querySelector("#alerts-display");
+  const errorDiv = document.querySelector("#error-message");
 
-  // 🚨 STOP IF HTML IS DIFFERENT (prevents crash)
-  if (!input || !button || !results || !errorDiv) return;
+  async function fetchWeatherData(state) {
+    const url = `https://api.weather.gov/alerts/active?area=${state}`;
+    return fetch(url);
+  }
 
-  button.addEventListener("click", async () => {
+  function displayWeather(data) {
+    const count = data.features ? data.features.length : 0;
 
-    const state = input.value.trim();
-
-    // reset UI first
-    errorDiv.textContent = "";
+    alertsDisplay.classList.remove("hidden");
     errorDiv.classList.add("hidden");
 
+    alertsDisplay.textContent = `Weather Alerts: ${count}`;
+
+    if (data.features && data.features.length > 0) {
+      data.features.forEach((alert) => {
+        const p = document.createElement("p");
+        p.textContent = alert.properties.headline || "No headline";
+        alertsDisplay.appendChild(p);
+      });
+    }
+  }
+
+  function displayError(message) {
+    errorDiv.classList.remove("hidden");
+    alertsDisplay.classList.add("hidden");
+
+    errorDiv.textContent = message;
+  }
+
+  button.addEventListener("click", async () => {
+    const state = input.value.trim();
+
     if (!state) {
-      errorDiv.textContent = "Enter state";
-      errorDiv.classList.remove("hidden");
+      displayError("Please enter a state abbreviation");
       return;
     }
 
     try {
-
-      const response = await fetch(
-        `https://api.weather.gov/alerts/active?area=${state}`
-      );
-
+      const response = await fetchWeatherData(state);
       const data = await response.json();
 
-      const count = data.features ? data.features.length : 0;
+      displayWeather(data);
 
-      results.textContent =
-        `Weather Alerts: ${count}`;
-
-      results.classList.remove("hidden");
-
-      input.value = ""; // ✅ required test
-
-      errorDiv.classList.add("hidden");
-
+      input.value = "";
     } catch (err) {
-      errorDiv.textContent = "Unable to fetch weather alerts";
-      errorDiv.classList.remove("hidden");
+      displayError("Network issue");
+      input.value = "";
     }
-
   });
-
-}
-
-// 🚨 IMPORTANT: delay execution until DOM is ready
-if (typeof document !== "undefined") {
-  document.addEventListener("DOMContentLoaded", runApp);
-}
-
-// exports for tests
-if (typeof module !== "undefined") {
-  module.exports = { runApp };
-}
+});
