@@ -1,28 +1,41 @@
-// index.js
-const weatherApi = "https://api.weather.gov/alerts/active?area="
-
-// Your code here!const input = document.getElementById("stateInput");
+const input = document.getElementById("stateInput");
 const button = document.getElementById("getAlerts");
 const results = document.getElementById("results");
 const errorDiv = document.getElementById("error");
 
-// FETCH WEATHER DATA
+// 🚨 CRITICAL FIX: only run if DOM exists
+if (button && input && results && errorDiv) {
+
+  button.addEventListener("click", () => {
+
+    const state = input.value.trim();
+
+    if (!state) {
+      displayError("Please enter a state abbreviation");
+      return;
+    }
+
+    fetchWeatherData(state);
+
+    input.value = "";
+  });
+
+}
+
+// FETCH DATA
 async function fetchWeatherData(state) {
   try {
-
-    const response = await fetch(
+    const res = await fetch(
       `https://api.weather.gov/alerts/active?area=${state}`
     );
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch weather alerts");
+    if (!res.ok) {
+      throw new Error("API error");
     }
 
-    const data = await response.json();
+    const data = await res.json();
 
     displayWeather(data, state);
-
-    return data;
 
   } catch (err) {
     displayError("Unable to fetch weather alerts");
@@ -32,40 +45,22 @@ async function fetchWeatherData(state) {
 // DISPLAY WEATHER
 function displayWeather(data, state) {
 
-  const count = data.features.length;
+  const count = data.features ? data.features.length : 0;
 
   results.textContent =
     `Current watches, warnings, and advisories for ${state.toUpperCase()}: ${count}`;
 
-  // clear error on success (IMPORTANT TEST REQUIREMENT)
   errorDiv.textContent = "";
   errorDiv.style.display = "none";
 }
 
 // DISPLAY ERROR
 function displayError(message) {
-
   errorDiv.textContent = message;
   errorDiv.style.display = "block";
 }
 
-// BUTTON CLICK EVENT
-button.addEventListener("click", () => {
-
-  const state = input.value.trim();
-
-  if (!state) {
-    displayError("Please enter a state abbreviation");
-    return;
-  }
-
-  fetchWeatherData(state);
-
-  // clear input after click (TEST REQUIREMENT)
-  input.value = "";
-});
-
-// EXPORT FOR TESTING (IMPORTANT FOR CODEGRADE)
+// EXPORT FOR TESTING
 if (typeof module !== "undefined") {
   module.exports = {
     fetchWeatherData,
