@@ -1,57 +1,38 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const input = document.querySelector("#state-input");
-  const button = document.querySelector("#get-alerts-btn");
+async function fetchWeatherAlerts(state) {
+  const input = document.querySelector('input');
+  const alertsDisplay = document.querySelector('#alerts-display');
+  const errorDiv = document.querySelector('#error-message');
 
-  const alertsDisplay = document.querySelector("#alerts-display");
-  const errorDiv = document.querySelector("#error-message");
+  input.value = '';
 
-  async function fetchWeatherData(state) {
-    const url = `https://api.weather.gov/alerts/active?area=${state}`;
-    return fetch(url);
+  try {
+    const response = await fetch(`https://api.weather.gov/alerts/active?area=${state}`);
+    const data = await response.json();
+
+    errorDiv.textContent = '';
+    errorDiv.classList.add('hidden');
+
+    const count = data.features.length;
+    alertsDisplay.innerHTML = `<p>${data.title}: ${count}</p>`;
+
+    data.features.forEach((feature) => {
+      const p = document.createElement('p');
+      p.textContent = feature.properties.headline;
+      alertsDisplay.appendChild(p);
+    });
+
+  } catch (error) {
+    errorDiv.textContent = error.message;
+    errorDiv.classList.remove('hidden');
   }
+}
 
-  function displayWeather(data) {
-    const count = data.features ? data.features.length : 0;
+document.addEventListener('DOMContentLoaded', () => {
+  const button = document.querySelector('button');
+  const input = document.querySelector('input');
 
-    alertsDisplay.classList.remove("hidden");
-    errorDiv.classList.add("hidden");
-
-    alertsDisplay.textContent = `Weather Alerts: ${count}`;
-
-    if (data.features && data.features.length > 0) {
-      data.features.forEach((alert) => {
-        const p = document.createElement("p");
-        p.textContent = alert.properties.headline || "No headline";
-        alertsDisplay.appendChild(p);
-      });
-    }
-  }
-
-  function displayError(message) {
-    errorDiv.classList.remove("hidden");
-    alertsDisplay.classList.add("hidden");
-
-    errorDiv.textContent = message;
-  }
-
-  button.addEventListener("click", async () => {
-    const state = input.value.trim();
-
-    if (!state) {
-      displayError("Please enter a state abbreviation");
-      return;
-    }
-
-    try {
-      const response = await fetchWeatherData(state);
-      const data = await response.json();
-
-      displayWeather(data);
-
-      input.value = "";
-    } catch (err) {
-      displayError("Network issue");
-      input.value = "";
-    }
+  button.addEventListener('click', () => {
+    const state = input.value;
+    fetchWeatherAlerts(state);
   });
 });
